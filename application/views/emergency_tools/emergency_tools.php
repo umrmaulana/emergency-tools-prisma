@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,17 +13,22 @@
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         .container-fluid {
             padding: 20px;
         }
-        .header-card, .content-card {
+
+        .header-card,
+        .content-card {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
+
         .header-card {
             margin-bottom: 30px;
         }
+
         .nav-card {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
@@ -33,32 +39,40 @@
             display: block;
             height: 200px;
         }
+
         .nav-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             text-decoration: none;
             color: inherit;
         }
+
         .nav-icon {
             font-size: 4rem;
             margin-bottom: 20px;
         }
+
         .nav-icon.location {
             color: #28a745;
         }
+
         .nav-icon.checksheet {
             color: #007bff;
         }
+
         .nav-title {
             font-size: 1.5rem;
             font-weight: bold;
             margin-bottom: 10px;
         }
+
         .nav-subtitle {
             color: #666;
             font-size: 0.9rem;
         }
-        .back-btn, .logout-btn {
+
+        .back-btn,
+        .logout-btn {
             background: linear-gradient(45deg, #6c757d, #495057);
             border: none;
             border-radius: 25px;
@@ -66,32 +80,40 @@
             padding: 8px 20px;
             transition: transform 0.2s;
         }
+
         .logout-btn {
             background: linear-gradient(45deg, #ff6b6b, #ee5a24);
         }
-        .back-btn:hover, .logout-btn:hover {
+
+        .back-btn:hover,
+        .logout-btn:hover {
             transform: scale(1.05);
             color: white;
         }
+
         .user-info {
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: bold;
         }
+
         @media (max-width: 768px) {
             .container-fluid {
                 padding: 15px;
             }
+
             .nav-icon {
                 font-size: 3rem;
             }
+
             .nav-title {
                 font-size: 1.2rem;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container-fluid">
         <!-- Header -->
@@ -178,10 +200,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Add click animation to navigation cards
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const navCards = document.querySelectorAll('.nav-card');
             navCards.forEach(card => {
-                card.addEventListener('click', function() {
+                card.addEventListener('click', function () {
                     this.style.transform = 'scale(0.98) translateY(-10px)';
                     setTimeout(() => {
                         this.style.transform = '';
@@ -198,9 +220,10 @@
                 });
                 document.getElementById('currentTime').textContent = timeString;
             }
-            
+
             setInterval(updateTime, 60000); // Update every minute
         });
     </script>
 </body>
+
 </html>

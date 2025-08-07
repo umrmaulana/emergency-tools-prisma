@@ -68,4 +68,6 @@ $route['emergency_tools/inspector/process_qr'] = 'emergency_tools/inspector/proc
 $route['emergency_tools/inspector/inspection_form/(:num)'] = 'emergency_tools/inspector/inspection_form/$1';
 $route['emergency_tools/inspector/submit_inspection'] = 'emergency_tools/inspector/submit_inspection';
 $route['emergency_tools/inspector/ajax_get_equipment'] = 'emergency_tools/inspector/ajax_get_equipment';
+$route['emergency_tools/inspector/debug_qr/(:any)'] = 'emergency_tools/inspector/debug_qr/$1';
+$route['emergency_tools/inspector/debug_qr'] = 'emergency_tools/inspector/debug_qr';
 

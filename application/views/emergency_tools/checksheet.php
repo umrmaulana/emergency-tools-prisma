@@ -327,14 +327,26 @@
                     document.getElementById('switchBtn').style.display = 'inline-block';
                 }
 
-                // Start with rear camera if available
-                const constraints = {
+                // Always try to start with rear camera (environment) first
+                let constraints = {
                     video: {
-                        facingMode: cameras.length > 1 ? 'environment' : 'user'
+                        facingMode: { ideal: 'environment' }
                     }
                 };
 
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                try {
+                    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (err) {
+                    console.log('Rear camera not available, trying front camera');
+                    // If rear camera fails, try front camera
+                    constraints = {
+                        video: {
+                            facingMode: 'user'
+                        }
+                    };
+                    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                }
+
                 video.srcObject = currentStream;
 
                 // Start scanning
@@ -369,19 +381,25 @@
         }
 
         function processQRCode(qrData) {
-            // Send QR data to server
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '<?= base_url('emergency_tools/inspector/process_qr') ?>';
+            // Show confirmation with detected QR data
+            if (confirm('QR Code detected: ' + qrData + '\n\nProceed to search for this equipment?')) {
+                // Send QR data to server
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '<?= base_url('emergency_tools/inspector/process_qr') ?>';
 
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'qr_code';
-            input.value = qrData;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'qr_code';
+                input.value = qrData;
 
-            form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                // Continue scanning if user cancels
+                requestAnimationFrame(scanQR);
+            }
         }
 
         function stopScanner() {

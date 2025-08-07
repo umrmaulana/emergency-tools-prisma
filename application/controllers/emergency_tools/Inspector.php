@@ -71,12 +71,23 @@ class Inspector extends CI_Controller
     public function process_qr()
     {
         $qr_code = $this->input->post('qr_code');
+
+        // Trim whitespace and validate input
+        $qr_code = trim($qr_code);
+
+        if (empty($qr_code)) {
+            $this->session->set_flashdata('error', 'QR code is empty');
+            redirect('emergency_tools/inspector/checksheet');
+            return;
+        }
+
         $equipment = $this->Equipment_model->get_by_qrcode($qr_code);
 
         if ($equipment) {
             redirect('emergency_tools/inspector/inspection_form/' . $equipment->id);
         } else {
-            $this->session->set_flashdata('error', 'Equipment not found');
+            // More detailed error message for debugging
+            $this->session->set_flashdata('error', 'Equipment not found for QR code: ' . $qr_code . '. Please check if the QR code is correct or try selecting equipment manually.');
             redirect('emergency_tools/inspector/checksheet');
         }
     }
@@ -199,5 +210,35 @@ class Inspector extends CI_Controller
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Equipment not found']);
         }
+    }
+
+    // Debug method to test QR codes
+    public function debug_qr($qr_code = null)
+    {
+        if (!$qr_code) {
+            echo "Usage: /emergency_tools/inspector/debug_qr/YOUR_QR_CODE<br>";
+            echo "Available equipment codes in database:<br>";
+            $all_equipment = $this->Equipment_model->get_all();
+            foreach ($all_equipment as $eq) {
+                echo "- Code: {$eq->equipment_code}, QR Path: {$eq->qrcode}<br>";
+            }
+            return;
+        }
+
+        echo "Testing QR Code: " . $qr_code . "<br><br>";
+
+        // Test direct QR path match
+        $this->db->where('qrcode', $qr_code);
+        $qr_result = $this->db->get('tm_equipments')->row();
+        echo "QR Path Match: " . ($qr_result ? "Found - " . $qr_result->equipment_code : "Not found") . "<br>";
+
+        // Test equipment code match
+        $this->db->where('equipment_code', $qr_code);
+        $code_result = $this->db->get('tm_equipments')->row();
+        echo "Equipment Code Match: " . ($code_result ? "Found - " . $code_result->equipment_code : "Not found") . "<br>";
+
+        // Test using model method
+        $model_result = $this->Equipment_model->get_by_qrcode($qr_code);
+        echo "Model Method Result: " . ($model_result ? "Found - " . $model_result->equipment_code : "Not found") . "<br>";
     }
 }
