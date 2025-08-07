@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Emergency Tools Development Server",
+			"type": "shell",
+			"command": "php",
+			"args": ["-S", "localhost:8080", "-t", "."],
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
