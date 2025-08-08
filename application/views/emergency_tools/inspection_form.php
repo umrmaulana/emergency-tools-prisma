@@ -327,6 +327,16 @@
             previewDiv.innerHTML = '';
 
             if (input.files && input.files[0]) {
+                const file = input.files[0];
+                console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+                // Check file size (5MB limit)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size too large. Please select a file smaller than 5MB.');
+                    input.value = '';
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     const img = document.createElement('img');
@@ -335,8 +345,14 @@
                     img.alt = 'Photo Preview';
                     img.onclick = () => showImageModal(e.target.result, 'Photo Preview');
                     previewDiv.appendChild(img);
+
+                    // Show success message
+                    const successMsg = document.createElement('small');
+                    successMsg.className = 'text-success d-block mt-1';
+                    successMsg.innerHTML = '<i class="fas fa-check me-1"></i>Photo ready for upload: ' + file.name;
+                    previewDiv.appendChild(successMsg);
                 };
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(file);
             }
         }
 
@@ -357,6 +373,14 @@
                 alert('Please select a status for all checksheet items.');
                 return false;
             }
+
+            // Check for file uploads for debugging
+            const fileInputs = document.querySelectorAll('input[type="file"]');
+            fileInputs.forEach(input => {
+                if (input.files.length > 0) {
+                    console.log('File selected for ' + input.name + ':', input.files[0].name, 'Size:', input.files[0].size);
+                }
+            });
 
             // Confirm submission
             if (!confirm('Are you sure you want to submit this inspection? This action cannot be undone.')) {
