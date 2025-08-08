@@ -48,6 +48,7 @@ class Emergency_tools extends CI_Controller
         $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
         $data['locations'] = $this->Location_model->get_all();
         $data['equipment_types'] = $this->Equipment_model->get_all_types();
+        $data['all_equipments'] = $this->Equipment_model->get_all_with_details();
         $this->load->view('emergency_tools/location', $data);
     }
 
