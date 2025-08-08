@@ -537,7 +537,8 @@
         function scanQRCode() {
             if (!isScanning || !video.videoWidth || !video.videoHeight) {
                 if (isScanning) {
-                    requestAnimationFrame(scanQRCode);
+                    // Reduce frame rate to 10 FPS for better performance
+                    setTimeout(() => requestAnimationFrame(scanQRCode), 100);
                 }
                 return;
             }
@@ -558,44 +559,73 @@
             }
 
             if (isScanning) {
-                requestAnimationFrame(scanQRCode);
+                // Reduce frame rate to 10 FPS for better performance and battery life
+                setTimeout(() => requestAnimationFrame(scanQRCode), 100);
             }
         }
 
         function processQRCode(qrData) {
             if (!isScanning) return;
 
+            // Stop scanning immediately to prevent multiple scans
             isScanning = false;
             document.getElementById('scannerSpinner').style.display = 'block';
+
+            // Use fetch with timeout for faster response
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
             fetch('<?= base_url("emergency_tools/process_qr") ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'qr_code=' + encodeURIComponent(qrData)
+                body: 'qr_code=' + encodeURIComponent(qrData),
+                signal: controller.signal
             })
-                .then(response => response.json())
+                .then(response => {
+                    clearTimeout(timeoutId);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     document.getElementById('scannerSpinner').style.display = 'none';
 
-                    if (data.status === 'success') {
+                    if (data.status === 'success' && data.redirect) {
                         document.getElementById('successFeedback').style.display = 'block';
-                        setTimeout(() => {
-                            window.location.href = data.redirect;
-                        }, 1500);
+                        // Immediate redirect for faster response
+                        window.location.href = data.redirect;
+                    } else if (data.redirect) {
+                        // Handle legacy response format
+                        document.getElementById('successFeedback').style.display = 'block';
+                        window.location.href = data.redirect;
                     } else {
-                        alert(data.message);
-                        isScanning = true;
-                        scanQRCode();
+                        alert(data.message || 'Equipment not found');
+                        // Resume scanning after error
+                        setTimeout(() => {
+                            isScanning = true;
+                            scanQRCode();
+                        }, 1000);
                     }
                 })
                 .catch(error => {
+                    clearTimeout(timeoutId);
                     document.getElementById('scannerSpinner').style.display = 'none';
                     console.error('Error processing QR code:', error);
-                    alert('Error processing QR code');
-                    isScanning = true;
-                    scanQRCode();
+
+                    if (error.name === 'AbortError') {
+                        alert('Request timeout. Please try again.');
+                    } else {
+                        alert('Network error. Please check connection and try again.');
+                    }
+
+                    // Resume scanning after error
+                    setTimeout(() => {
+                        isScanning = true;
+                        scanQRCode();
+                    }, 1000);
                 });
         }
 

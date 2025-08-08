@@ -55,47 +55,30 @@ class Equipment_model extends CI_Model
         // Trim whitespace and convert to uppercase for consistency
         $qrcode = strtoupper(trim($qrcode));
 
+        // Use single optimized query with OR conditions for better performance
         $this->db->select('e.*, l.location_name, l.location_code, t.equipment_name, t.equipment_type, t.icon_url');
         $this->db->from($this->table . ' e');
         $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
         $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
 
-        // First, try exact match with QR code path
+        // Try multiple match patterns in single query
+        $this->db->group_start();
         $this->db->where('e.qrcode', $qrcode);
+        $this->db->or_where('UPPER(e.equipment_code)', $qrcode);
+        $this->db->or_like('UPPER(e.equipment_code)', $qrcode);
+        $this->db->group_end();
+
+        $this->db->where('e.status', 'active');
+        $this->db->limit(1); // Only need one result
+
         $result = $this->db->get()->row();
 
         if ($result) {
             return $result;
         }
 
-        // Reset query for next attempt
-        $this->db->select('e.*, l.location_name, l.location_code, t.equipment_name, t.equipment_type, t.icon_url');
-        $this->db->from($this->table . ' e');
-        $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
-        $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
-
-        // Second, try to find by equipment_code (case insensitive)
-        $this->db->where('UPPER(e.equipment_code)', $qrcode);
-        $result = $this->db->get()->row();
-
-        if ($result) {
-            return $result;
-        }
-
-        // Third, try to find equipment_code that contains the QR code
-        $this->db->select('e.*, l.location_name, l.location_code, t.equipment_name, t.equipment_type, t.icon_url');
-        $this->db->from($this->table . ' e');
-        $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
-        $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
-        $this->db->like('UPPER(e.equipment_code)', $qrcode);
-        $result = $this->db->get()->row();
-
-        if ($result) {
-            return $result;
-        }
-
-        // Fourth, try to extract equipment code from QR path
-        if (strpos($qrcode, 'qr_') !== false) {
+        // Only if no result, try to extract equipment code from QR filename
+        if (strpos($qrcode, 'QR_') !== false || strpos($qrcode, '_') !== false) {
             // Extract from filename like: qr_test_003_1754548121.png -> TEST-003
             $parts = explode('_', $qrcode);
             if (count($parts) >= 3) {
@@ -106,11 +89,10 @@ class Equipment_model extends CI_Model
                 $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
                 $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
                 $this->db->where('UPPER(e.equipment_code)', $extracted_code);
-                $result = $this->db->get()->row();
+                $this->db->where('e.status', 'active');
+                $this->db->limit(1);
 
-                if ($result) {
-                    return $result;
-                }
+                return $this->db->get()->row();
             }
         }
 

@@ -84,6 +84,9 @@ class Emergency_tools extends CI_Controller
 
     public function process_qr()
     {
+        // Set JSON content type immediately for faster response
+        $this->output->set_content_type('application/json');
+
         $qr_code = $this->input->post('qr_code');
         $location_id = $this->input->post('location_id');
 
@@ -91,23 +94,24 @@ class Emergency_tools extends CI_Controller
         $qr_code = trim($qr_code);
 
         if (empty($qr_code)) {
-            echo json_encode(['status' => 'error', 'message' => 'QR code is empty']);
+            $this->output->set_output(json_encode(['status' => 'error', 'message' => 'QR code is empty']));
             return;
         }
 
+        // Use optimized database query
         $equipment = $this->Equipment_model->get_by_qrcode($qr_code);
 
         if ($equipment) {
-            echo json_encode([
+            $this->output->set_output(json_encode([
                 'status' => 'success',
                 'equipment' => $equipment,
                 'redirect' => base_url('emergency_tools/inspection_form/' . $equipment->id)
-            ]);
+            ]));
         } else {
-            echo json_encode([
+            $this->output->set_output(json_encode([
                 'status' => 'error',
                 'message' => 'Equipment not found for QR code: ' . $qr_code
-            ]);
+            ]));
         }
     }
 
@@ -187,7 +191,6 @@ class Emergency_tools extends CI_Controller
                     $detail_data = [
                         'inspection_id' => $inspection_id,
                         'checksheet_item_id' => $item_id,
-                        'actual_condition' => isset($item_data['note']) ? $item_data['note'] : 'Inspected',
                         'note' => isset($item_data['note']) ? $item_data['note'] : '',
                         'status' => $item_data['status']
                     ];
@@ -222,7 +225,7 @@ class Emergency_tools extends CI_Controller
             }
 
             $this->session->set_flashdata('success', 'Inspection submitted successfully! Inspection ID: ' . $inspection_id);
-            redirect('emergency_tools/debug_inspection/' . $inspection_id);
+            redirect('emergency_tools/index');
 
         } catch (Exception $e) {
             $this->db->trans_rollback();
