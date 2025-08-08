@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Inspector extends CI_Controller
+class Emergency_tools extends CI_Controller
 {
     public function __construct()
     {
@@ -30,65 +30,83 @@ class Inspector extends CI_Controller
         // Check if user is inspector
         if ($this->session->userdata('level') !== 'inspector') {
             $this->session->set_flashdata('error', 'Access denied. Inspector access required.');
-            redirect('auth/logout');
+            redirect('dashboard');
         }
     }
 
     public function index()
     {
-        $data['title'] = 'Inspector Dashboard';
+        $data['title'] = 'Emergency Tools - Inspector';
         $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
-        $this->load->view('emergency_tools/dashboard', $data);
-    }
-
-    public function emergency_tools()
-    {
-        $data['title'] = 'Emergency Tools';
-        $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
-        $this->load->view('emergency_tools/emergency_tools', $data);
+        $data['equipments'] = $this->Equipment_model->get_all();
+        $this->load->view('emergency_tools/index', $data);
     }
 
     public function location()
     {
-        $data['title'] = 'Locations';
+        $data['title'] = 'Select Location - Emergency Tools';
+        $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
         $data['locations'] = $this->Location_model->get_all();
+        $data['equipment_types'] = $this->Equipment_model->get_all_types();
         $this->load->view('emergency_tools/location', $data);
     }
 
-    public function checksheet()
+    public function checksheet($location_id = null)
     {
-        $data['title'] = 'Checksheet';
-        $data['equipments'] = $this->Equipment_model->get_all_with_details();
+        if (!$location_id) {
+            redirect('emergency_tools/location');
+        }
+
+        $data['title'] = 'Checksheet - Emergency Tools';
+        $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
+        $data['location'] = $this->Location_model->get_by_id($location_id);
+        $data['equipment_types'] = $this->Equipment_model->get_all_types();
+        $data['equipments_by_location'] = $this->Equipment_model->get_by_location($location_id);
+
+        if (!$data['location']) {
+            $this->session->set_flashdata('error', 'Location not found');
+            redirect('emergency_tools/location');
+        }
+
         $this->load->view('emergency_tools/checksheet', $data);
     }
 
-    public function scan_qr()
+    public function get_equipments_by_type()
     {
-        $data['title'] = 'Scan QR Code';
-        $this->load->view('emergency_tools/inspector/scan_qr', $data);
+        $equipment_type_id = $this->input->post('equipment_type_id');
+        $location_id = $this->input->post('location_id');
+
+        $equipments = $this->Equipment_model->get_by_type_and_location($equipment_type_id, $location_id);
+
+        echo json_encode(['equipments' => $equipments]);
     }
 
     public function process_qr()
     {
         $qr_code = $this->input->post('qr_code');
+        $location_id = $this->input->post('location_id');
 
         // Trim whitespace and validate input
         $qr_code = trim($qr_code);
 
         if (empty($qr_code)) {
-            $this->session->set_flashdata('error', 'QR code is empty');
-            redirect('emergency_tools/inspector/checksheet');
+            echo json_encode(['status' => 'error', 'message' => 'QR code is empty']);
             return;
         }
 
         $equipment = $this->Equipment_model->get_by_qrcode($qr_code);
 
         if ($equipment) {
-            redirect('emergency_tools/inspector/inspection_form/' . $equipment->id);
+            echo json_encode([
+                'status' => 'success',
+                'equipment' => $equipment,
+                'redirect' => base_url('emergency_tools/inspection_form/' . $equipment->id)
+            ]);
         } else {
-            // More detailed error message for debugging
-            $this->session->set_flashdata('error', 'Equipment not found for QR code: ' . $qr_code . '. Please check if the QR code is correct or try selecting equipment manually.');
-            redirect('emergency_tools/inspector/checksheet');
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Equipment not found for QR code: ' . $qr_code
+            ]);
         }
     }
 
@@ -99,16 +117,17 @@ class Inspector extends CI_Controller
         }
 
         if (!$equipment_id) {
-            redirect('emergency_tools/inspector/checksheet');
+            redirect('emergency_tools/location');
         }
 
-        $data['title'] = 'Inspection Form';
+        $data['title'] = 'Inspection Form - Emergency Tools';
+        $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
         $data['equipment'] = $this->Equipment_model->get_by_id_with_details($equipment_id);
         $data['checksheet_items'] = $this->Checksheet_model->get_by_equipment_type($data['equipment']->equipment_type_id);
 
         if (!$data['equipment']) {
             $this->session->set_flashdata('error', 'Equipment not found');
-            redirect('emergency_tools/inspector/checksheet');
+            redirect('emergency_tools/location');
         }
 
         $this->load->view('emergency_tools/inspection_form', $data);
@@ -121,7 +140,7 @@ class Inspector extends CI_Controller
 
         if ($this->form_validation->run() == FALSE) {
             $this->session->set_flashdata('error', validation_errors());
-            redirect('emergency_tools/inspector/checksheet');
+            redirect('emergency_tools/location');
         }
 
         $equipment_id = $this->input->post('equipment_id');
@@ -176,7 +195,7 @@ class Inspector extends CI_Controller
             $this->session->set_flashdata('success', 'Inspection submitted successfully');
         }
 
-        redirect('emergency_tools/inspector');
+        redirect('emergency_tools/location');
     }
 
     private function _upload_photo($item_id)
@@ -200,23 +219,11 @@ class Inspector extends CI_Controller
         return false;
     }
 
-    public function ajax_get_equipment()
-    {
-        $equipment_code = $this->input->post('equipment_code');
-        $equipment = $this->Equipment_model->get_by_code($equipment_code);
-
-        if ($equipment) {
-            echo json_encode(['status' => 'success', 'data' => $equipment]);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Equipment not found']);
-        }
-    }
-
     // Debug method to test QR codes
     public function debug_qr($qr_code = null)
     {
         if (!$qr_code) {
-            echo "Usage: /emergency_tools/inspector/debug_qr/YOUR_QR_CODE<br>";
+            echo "Usage: /emergency_tools/debug_qr/YOUR_QR_CODE<br>";
             echo "Available equipment codes in database:<br>";
             $all_equipment = $this->Equipment_model->get_all();
             foreach ($all_equipment as $eq) {
@@ -226,16 +233,6 @@ class Inspector extends CI_Controller
         }
 
         echo "Testing QR Code: " . $qr_code . "<br><br>";
-
-        // Test direct QR path match
-        $this->db->where('qrcode', $qr_code);
-        $qr_result = $this->db->get('tm_equipments')->row();
-        echo "QR Path Match: " . ($qr_result ? "Found - " . $qr_result->equipment_code : "Not found") . "<br>";
-
-        // Test equipment code match
-        $this->db->where('equipment_code', $qr_code);
-        $code_result = $this->db->get('tm_equipments')->row();
-        echo "Equipment Code Match: " . ($code_result ? "Found - " . $code_result->equipment_code : "Not found") . "<br>";
 
         // Test using model method
         $model_result = $this->Equipment_model->get_by_qrcode($qr_code);

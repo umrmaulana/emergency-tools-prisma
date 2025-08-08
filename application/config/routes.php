@@ -49,7 +49,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 | Examples:	my-controller/index	-> my_controller/index
 |		my-controller/my-method	-> my_controller/my_method
 */
-$route['default_controller'] = 'auth';
+$route['default_controller'] = 'dashboard';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
@@ -57,7 +57,24 @@ $route['translate_uri_dashes'] = FALSE;
 $route['login'] = 'auth/login';
 $route['logout'] = 'auth/logout';
 
-// Emergency Tools Inspector routes
+// Main Dashboard routes
+$route['dashboard'] = 'dashboard/index';
+$route['dashboard/emergency_tools'] = 'dashboard/emergency_tools';
+$route['dashboard/ppic'] = 'dashboard/ppic';
+$route['dashboard/delivery'] = 'dashboard/delivery';
+
+// Emergency Tools routes (new structure)
+$route['emergency_tools/index'] = 'emergency_tools/index';
+$route['emergency_tools/location'] = 'emergency_tools/location';
+$route['emergency_tools/checksheet/(:num)'] = 'emergency_tools/checksheet/$1';
+$route['emergency_tools/get_equipments_by_type'] = 'emergency_tools/get_equipments_by_type';
+$route['emergency_tools/process_qr'] = 'emergency_tools/process_qr';
+$route['emergency_tools/inspection_form/(:num)'] = 'emergency_tools/inspection_form/$1';
+$route['emergency_tools/submit_inspection'] = 'emergency_tools/submit_inspection';
+$route['emergency_tools/debug_qr/(:any)'] = 'emergency_tools/debug_qr/$1';
+$route['emergency_tools/debug_qr'] = 'emergency_tools/debug_qr';
+
+// Emergency Tools Inspector routes (legacy - kept for compatibility)
 $route['emergency_tools/inspector'] = 'emergency_tools/inspector/index';
 $route['emergency_tools/inspector/dashboard'] = 'emergency_tools/inspector/index';
 $route['emergency_tools/inspector/emergency_tools'] = 'emergency_tools/inspector/emergency_tools';

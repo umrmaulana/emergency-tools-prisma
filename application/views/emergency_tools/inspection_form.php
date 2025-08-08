@@ -160,7 +160,7 @@
                     <small class="text-muted">Complete equipment inspection</small>
                 </div>
                 <div class="col-auto">
-                    <a href="<?= base_url('emergency_tools/inspector/checksheet') ?>" class="btn back-btn">
+                    <a href="<?= base_url('emergency_tools') ?>" class="btn back-btn">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
                 </div>

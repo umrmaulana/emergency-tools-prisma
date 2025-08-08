@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= isset($title) ? $title : 'Checksheet' ?></title>
+    <title><?= isset($title) ? $title : 'Emergency Tools' ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -30,18 +30,22 @@
             margin: 20px;
             padding: 30px;
             text-align: center;
+            min-height: calc(100vh - 200px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .scanner-title {
             color: #667eea;
             font-weight: bold;
             margin-bottom: 25px;
-            font-size: 1.4rem;
+            font-size: 1.6rem;
         }
 
         #scanner-container {
             position: relative;
-            max-width: 300px;
+            max-width: 350px;
             margin: 0 auto 25px;
             border-radius: 15px;
             overflow: hidden;
@@ -60,9 +64,9 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            border: 3px solid rgba(102, 126, 234, 0.8);
+            width: 220px;
+            height: 220px;
+            border: 4px solid rgba(102, 126, 234, 0.8);
             border-radius: 15px;
             pointer-events: none;
         }
@@ -70,11 +74,11 @@
         .scanner-overlay::before {
             content: '';
             position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border: 3px solid rgba(255, 255, 255, 0.5);
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 3px solid rgba(255, 255, 255, 0.6);
             border-radius: 15px;
             animation: scan 2s ease-in-out infinite;
         }
@@ -83,7 +87,7 @@
 
             0%,
             100% {
-                opacity: 0.5;
+                opacity: 0.4;
             }
 
             50% {
@@ -92,7 +96,7 @@
         }
 
         .camera-controls {
-            margin: 20px 0;
+            margin: 25px 0;
         }
 
         .camera-btn {
@@ -100,9 +104,10 @@
             border: none;
             border-radius: 25px;
             color: white;
-            padding: 10px 20px;
-            margin: 5px;
+            padding: 12px 25px;
+            margin: 8px;
             transition: transform 0.2s;
+            font-size: 0.95rem;
         }
 
         .camera-btn:hover {
@@ -111,20 +116,21 @@
         }
 
         .manual-selection {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid rgba(102, 126, 234, 0.2);
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 3px solid rgba(102, 126, 234, 0.2);
         }
 
         .dropdown-container {
-            margin: 15px 0;
+            margin: 20px 0;
         }
 
         .form-select {
             border-radius: 25px;
             border: 2px solid rgba(102, 126, 234, 0.3);
-            padding: 12px 20px;
+            padding: 15px 25px;
             background: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
         }
 
         .form-select:focus {
@@ -132,12 +138,10 @@
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
 
-        .location-info {
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 15px;
-            padding: 15px;
-            margin: 20px 0;
-            border-left: 4px solid #667eea;
+        .form-label {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
         }
 
         .proceed-btn {
@@ -145,16 +149,17 @@
             border: none;
             border-radius: 25px;
             color: white;
-            padding: 12px 30px;
+            padding: 15px 35px;
             font-size: 1.1rem;
-            margin-top: 20px;
+            margin-top: 25px;
             transition: transform 0.3s;
             width: 100%;
+            max-width: 300px;
         }
 
         .proceed-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
             color: white;
         }
 
@@ -189,11 +194,13 @@
             justify-content: center;
             transition: transform 0.2s;
             font-size: 0.95rem;
+            font-weight: 500;
         }
 
         .nav-btn:hover {
             transform: translateY(-2px);
             color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
         .nav-btn i {
@@ -211,19 +218,33 @@
             margin: 20px 0;
         }
 
+        .success-feedback {
+            background: rgba(40, 167, 69, 0.1);
+            border: 2px solid rgba(40, 167, 69, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #155724;
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .scanner-container {
                 margin: 15px;
-                padding: 20px;
+                padding: 25px 20px;
             }
 
             #scanner-container {
-                max-width: 250px;
+                max-width: 280px;
             }
 
             .scanner-overlay {
-                width: 150px;
-                height: 150px;
+                width: 180px;
+                height: 180px;
+            }
+
+            .scanner-title {
+                font-size: 1.3rem;
             }
         }
     </style>
@@ -240,9 +261,9 @@
             </div>
             <div class="col">
                 <h5 class="mb-0" style="color: #667eea; font-weight: bold;">
-                    <i class="fas fa-clipboard-check me-2"></i>Checksheet - <?= $location->location_name ?>
+                    <i class="fas fa-tools me-2"></i>Emergency Tools
                 </h5>
-                <small class="text-muted">Equipment inspection at <?= $location->location_code ?></small>
+                <small class="text-muted">Equipment Inspection System</small>
             </div>
             <div class="col-auto">
                 <span class="badge bg-success">
@@ -267,24 +288,7 @@
         </div>
     <?php endif; ?>
 
-    <!-- Location Information -->
-    <div class="location-info">
-        <div class="row align-items-center">
-            <div class="col">
-                <h6 class="mb-1">
-                    <i class="fas fa-map-marker-alt me-2"></i><?= $location->location_name ?>
-                </h6>
-                <small class="text-muted">Location Code: <?= $location->location_code ?></small>
-            </div>
-            <div class="col-auto">
-                <span class="badge bg-primary">
-                    <?= count($equipments_by_location) ?> Equipment(s)
-                </span>
-            </div>
-        </div>
-    </div>
-
-    <!-- QR Scanner Section -->
+    <!-- Main Scanner Container -->
     <div class="scanner-container">
         <h6 class="scanner-title">
             <i class="fas fa-qrcode me-2"></i>Scan Equipment QR Code
@@ -299,7 +303,7 @@
             <button id="startCamera" class="btn camera-btn">
                 <i class="fas fa-camera me-2"></i>Start Camera
             </button>
-            <button id="switchCamera" class="btn camera-btn">
+            <button id="switchCamera" class="btn camera-btn" style="display: none;">
                 <i class="fas fa-sync-alt me-2"></i>Switch Camera
             </button>
             <button id="stopCamera" class="btn camera-btn">
@@ -314,27 +318,25 @@
             <p class="mt-2">Processing QR Code...</p>
         </div>
 
+        <div class="success-feedback" id="successFeedback">
+            <i class="fas fa-check-circle me-2"></i>
+            <span>QR Code detected successfully!</span>
+        </div>
+
         <!-- Manual Selection -->
         <div class="manual-selection">
             <h6 class="scanner-title">
-                <i class="fas fa-hand-pointer me-2"></i>Or Select Manually
+                <i class="fas fa-hand-pointer me-2"></i>Or Select Equipment Code
             </h6>
 
             <div class="dropdown-container">
-                <label for="equipmentType" class="form-label">Equipment Type:</label>
-                <select class="form-select" id="equipmentType">
-                    <option value="">-- Select Equipment Type --</option>
-                    <?php foreach ($equipment_types as $type): ?>
-                        <option value="<?= $type->id ?>"><?= $type->equipment_type ?> (<?= $type->equipment_name ?>)
-                        </option>
+                <label for="equipmentCode" class="form-label">Equipment Code:</label>
+                <select class="form-select" id="equipmentCode">
+                    <option value="">-- Select Equipment Code --</option>
+                    <?php foreach ($equipments as $equipment): ?>
+                        <option value="<?= $equipment->id ?>"><?= $equipment->equipment_code ?> -
+                            <?= $equipment->equipment_name ?></option>
                     <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="dropdown-container">
-                <label for="equipmentName" class="form-label">Equipment:</label>
-                <select class="form-select" id="equipmentName" disabled>
-                    <option value="">-- Select Equipment Type First --</option>
                 </select>
             </div>
 
@@ -348,7 +350,7 @@
     <div class="bottom-nav">
         <div class="row g-2">
             <div class="col-6">
-                <a href="<?= base_url('emergency_tools/index') ?>" class="btn nav-btn w-100">
+                <a href="<?= base_url('emergency_tools') ?>" class="btn nav-btn w-100">
                     <i class="fas fa-clipboard-check"></i>Checksheet
                 </a>
             </div>
@@ -369,7 +371,6 @@
         let isScanning = false;
         let cameras = [];
         let currentCameraIndex = 0;
-        const locationId = <?= $location->id ?>;
 
         document.addEventListener('DOMContentLoaded', function () {
             video = document.getElementById('video');
@@ -383,8 +384,7 @@
             document.getElementById('startCamera').addEventListener('click', startCamera);
             document.getElementById('switchCamera').addEventListener('click', switchCamera);
             document.getElementById('stopCamera').addEventListener('click', stopCamera);
-            document.getElementById('equipmentType').addEventListener('change', loadEquipments);
-            document.getElementById('equipmentName').addEventListener('change', selectEquipment);
+            document.getElementById('equipmentCode').addEventListener('change', selectEquipment);
             document.getElementById('proceedManual').addEventListener('click', proceedToInspection);
 
             // Auto-start camera
@@ -447,6 +447,7 @@
             document.getElementById('startCamera').disabled = false;
             document.getElementById('stopCamera').disabled = true;
             document.getElementById('scannerSpinner').style.display = 'none';
+            document.getElementById('successFeedback').style.display = 'none';
         }
 
         async function switchCamera() {
@@ -490,14 +491,17 @@
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'qr_code=' + encodeURIComponent(qrData) + '&location_id=' + locationId
+                body: 'qr_code=' + encodeURIComponent(qrData)
             })
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('scannerSpinner').style.display = 'none';
 
                     if (data.status === 'success') {
-                        window.location.href = data.redirect;
+                        document.getElementById('successFeedback').style.display = 'block';
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 1500);
                     } else {
                         alert(data.message);
                         isScanning = true;
@@ -513,51 +517,9 @@
                 });
         }
 
-        function loadEquipments() {
-            const equipmentTypeId = document.getElementById('equipmentType').value;
-            const equipmentSelect = document.getElementById('equipmentName');
-
-            if (!equipmentTypeId) {
-                equipmentSelect.innerHTML = '<option value="">-- Select Equipment Type First --</option>';
-                equipmentSelect.disabled = true;
-                document.getElementById('proceedManual').disabled = true;
-                return;
-            }
-
-            equipmentSelect.innerHTML = '<option value="">Loading...</option>';
-            equipmentSelect.disabled = true;
-
-            fetch('<?= base_url("emergency_tools/get_equipments_by_type") ?>', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'equipment_type_id=' + equipmentTypeId + '&location_id=' + locationId
-            })
-                .then(response => response.json())
-                .then(data => {
-                    equipmentSelect.innerHTML = '<option value="">-- Select Equipment --</option>';
-
-                    if (data.equipments && data.equipments.length > 0) {
-                        data.equipments.forEach(equipment => {
-                            const option = document.createElement('option');
-                            option.value = equipment.id;
-                            option.textContent = `${equipment.equipment_code} - ${equipment.equipment_name}`;
-                            equipmentSelect.appendChild(option);
-                        });
-                        equipmentSelect.disabled = false;
-                    } else {
-                        equipmentSelect.innerHTML = '<option value="">-- No Equipment Available --</option>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading equipments:', error);
-                    equipmentSelect.innerHTML = '<option value="">-- Error Loading Equipment --</option>';
-                });
-        }
-
         function selectEquipment() {
-            selectedEquipmentId = document.getElementById('equipmentName').value;
+            const equipmentId = document.getElementById('equipmentCode').value;
+            selectedEquipmentId = equipmentId;
             document.getElementById('proceedManual').disabled = !selectedEquipmentId;
         }
 
@@ -567,8 +529,16 @@
                 return;
             }
 
+            // Redirect to inspection form with selected equipment
             window.location.href = `<?= base_url('emergency_tools/inspection_form/') ?>${selectedEquipmentId}`;
         }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function () {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        });
     </script>
 </body>
 

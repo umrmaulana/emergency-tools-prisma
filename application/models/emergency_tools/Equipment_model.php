@@ -136,6 +136,37 @@ class Equipment_model extends CI_Model
         return $this->db->where('id', $id)->update($this->table, $data);
     }
 
+    public function get_all_types()
+    {
+        return $this->db->get('tm_master_equipment_types')->result();
+    }
+
+    public function get_by_location($location_id)
+    {
+        $this->db->select('e.*, l.location_name, l.location_code, t.equipment_name, t.equipment_type');
+        $this->db->from($this->table . ' e');
+        $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
+        $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
+        $this->db->where('e.location_id', $location_id);
+        $this->db->where('e.status', 'active');
+        return $this->db->get()->result();
+    }
+
+    public function get_by_type_and_location($equipment_type_id, $location_id = null)
+    {
+        $this->db->select('e.*, l.location_name, l.location_code, t.equipment_name, t.equipment_type');
+        $this->db->from($this->table . ' e');
+        $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
+        $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
+        $this->db->where('e.equipment_type_id', $equipment_type_id);
+        if ($location_id) {
+            $this->db->where('e.location_id', $location_id);
+        }
+        $this->db->where('e.status', 'active');
+        $this->db->order_by('e.equipment_code', 'ASC');
+        return $this->db->get()->result();
+    }
+
     public function delete($id)
     {
         return $this->db->where('id', $id)->delete($this->table);

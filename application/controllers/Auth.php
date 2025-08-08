@@ -83,14 +83,8 @@ class Auth extends CI_Controller
     {
         $level = $this->session->userdata('level');
 
-        if ($level == 'spv') {
-            redirect('supervisor/dashboard');
-        } elseif ($level == 'inspector') {
-            redirect('emergency_tools/inspector');
-        } else {
-            $this->session->sess_destroy();
-            $this->session->set_flashdata('error', 'Role tidak dikenal!');
-            redirect('auth');
-        }
+        // Semua user diarahkan ke dashboard utama
+        // Dashboard akan menangani akses berdasarkan level
+        redirect('dashboard');
     }
 }
