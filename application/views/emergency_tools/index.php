@@ -334,8 +334,12 @@
                 <select class="form-select" id="equipmentCode">
                     <option value="">-- Select Equipment Code --</option>
                     <?php foreach ($equipments as $equipment): ?>
-                        <option value="<?= $equipment->id ?>"><?= $equipment->equipment_code ?> -
-                            <?= $equipment->equipment_name ?></option>
+                        <option value="<?= $equipment->id ?>">
+                            <?= $equipment->equipment_code ?>
+                            <?php if (isset($equipment->equipment_name) && $equipment->equipment_name): ?>
+                                - <?= $equipment->equipment_name ?>
+                            <?php endif; ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -350,7 +354,7 @@
     <div class="bottom-nav">
         <div class="row g-2">
             <div class="col-6">
-                <a href="<?= base_url('emergency_tools') ?>" class="btn nav-btn w-100">
+                <a href="<?= base_url('emergency_tools/index') ?>" class="btn nav-btn w-100">
                     <i class="fas fa-clipboard-check"></i>Checksheet
                 </a>
             </div>
@@ -393,6 +397,12 @@
 
         async function initializeCameras() {
             try {
+                // Check if mediaDevices API is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+                    console.warn('MediaDevices API not supported');
+                    return;
+                }
+
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 cameras = devices.filter(device => device.kind === 'videoinput');
 
@@ -406,32 +416,66 @@
 
         async function startCamera() {
             try {
+                // Check if mediaDevices API is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Camera access not supported in this browser');
+                    return;
+                }
+
                 if (currentStream) {
                     currentStream.getTracks().forEach(track => track.stop());
                 }
 
-                // Prefer rear camera
+                // Always try to use rear camera first
                 const constraints = {
                     video: {
-                        facingMode: cameras.length > 0 && currentCameraIndex < cameras.length ?
-                            { deviceId: cameras[currentCameraIndex].deviceId } :
-                            { facingMode: 'environment' },
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
                     }
                 };
 
                 currentStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = currentStream;
 
-                isScanning = true;
-                scanQRCode();
+                // Wait for video to be ready
+                video.onloadedmetadata = () => {
+                    video.play();
+                    isScanning = true;
+                    scanQRCode();
+                };
 
                 document.getElementById('startCamera').disabled = true;
                 document.getElementById('stopCamera').disabled = false;
+
+                // Show switch camera button if multiple cameras available
+                if (cameras.length > 1) {
+                    document.getElementById('switchCamera').style.display = 'inline-block';
+                }
             } catch (error) {
                 console.error('Error starting camera:', error);
-                alert('Unable to access camera. Please check permissions.');
+                // Fallback to any available camera
+                try {
+                    const fallbackConstraints = {
+                        video: {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+                    currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    video.srcObject = currentStream;
+
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        isScanning = true;
+                        scanQRCode();
+                    };
+
+                    document.getElementById('startCamera').disabled = true;
+                    document.getElementById('stopCamera').disabled = false;
+                } catch (fallbackError) {
+                    alert('Unable to access camera. Please check permissions and try again.');
+                }
             }
         }
 
@@ -453,15 +497,48 @@
         async function switchCamera() {
             if (cameras.length <= 1) return;
 
-            currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-            if (isScanning) {
-                await startCamera();
+            try {
+                // Check if mediaDevices API is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Camera access not supported in this browser');
+                    return;
+                }
+
+                currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+
+                const constraints = {
+                    video: {
+                        deviceId: { exact: cameras[currentCameraIndex].deviceId },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+
+                video.onloadedmetadata = () => {
+                    video.play();
+                    if (isScanning) {
+                        scanQRCode();
+                    }
+                };
+            } catch (error) {
+                console.error('Error switching camera:', error);
+                // Fallback to original camera setup
+                startCamera();
             }
         }
 
         function scanQRCode() {
             if (!isScanning || !video.videoWidth || !video.videoHeight) {
-                requestAnimationFrame(scanQRCode);
+                if (isScanning) {
+                    requestAnimationFrame(scanQRCode);
+                }
                 return;
             }
 
@@ -470,14 +547,19 @@
             canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-            const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+            const qrCode = jsQR(imageData.data, canvas.width, canvas.height, {
+                inversionAttempts: "dontInvert",
+            });
 
-            if (qrCode) {
+            if (qrCode && qrCode.data) {
+                console.log('QR Code detected:', qrCode.data);
                 processQRCode(qrCode.data);
                 return;
             }
 
-            requestAnimationFrame(scanQRCode);
+            if (isScanning) {
+                requestAnimationFrame(scanQRCode);
+            }
         }
 
         function processQRCode(qrData) {

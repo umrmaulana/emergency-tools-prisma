@@ -38,7 +38,7 @@ class Emergency_tools extends CI_Controller
     {
         $data['title'] = 'Emergency Tools - Inspector';
         $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
-        $data['equipments'] = $this->Equipment_model->get_all();
+        $data['equipments'] = $this->Equipment_model->get_all_with_details();
         $this->load->view('emergency_tools/index', $data);
     }
 
@@ -139,8 +139,8 @@ class Emergency_tools extends CI_Controller
         $this->form_validation->set_rules('notes', 'Notes', 'trim');
 
         if ($this->form_validation->run() == FALSE) {
-            $this->session->set_flashdata('error', validation_errors());
-            redirect('emergency_tools/location');
+            $this->session->set_flashdata('error', 'Please fill all required fields');
+            redirect('emergency_tools/index');
         }
 
         $equipment_id = $this->input->post('equipment_id');
@@ -150,52 +150,62 @@ class Emergency_tools extends CI_Controller
         // Start transaction
         $this->db->trans_start();
 
-        // Create inspection record
-        $inspection_data = [
-            'user_id' => $this->session->userdata('user_id'),
-            'equipment_id' => $equipment_id,
-            'inspection_date' => date('Y-m-d H:i:s'),
-            'notes' => $notes,
-            'approval_status' => 'pending'
-        ];
+        try {
+            // Create inspection record
+            $inspection_data = [
+                'user_id' => $this->session->userdata('user_id'),
+                'equipment_id' => $equipment_id,
+                'inspection_date' => date('Y-m-d H:i:s'),
+                'notes' => $notes,
+                'approval_status' => 'pending'
+            ];
 
-        $inspection_id = $this->Inspection_model->insert($inspection_data);
+            $inspection_id = $this->Inspection_model->insert($inspection_data);
 
-        // Process checksheet items
-        if ($checksheet_items && is_array($checksheet_items)) {
-            foreach ($checksheet_items as $item_id => $item_data) {
-                $detail_data = [
-                    'inspection_id' => $inspection_id,
-                    'checksheet_item_id' => $item_id,
-                    'actual_condition' => $item_data['actual_condition'],
-                    'note' => $item_data['note'],
-                    'status' => $item_data['status']
-                ];
-
-                // Handle photo upload if exists
-                if (!empty($_FILES['photo_' . $item_id]['name'])) {
-                    $photo_url = $this->_upload_photo($item_id);
-                    if ($photo_url) {
-                        $detail_data['photo_url'] = $photo_url;
+            // Process checksheet items if any
+            if ($checksheet_items && is_array($checksheet_items)) {
+                foreach ($checksheet_items as $item_id => $item_data) {
+                    // Validate required fields
+                    if (!isset($item_data['status']) || empty($item_data['status'])) {
+                        throw new Exception('Status is required for all checksheet items');
                     }
+
+                    $detail_data = [
+                        'inspection_id' => $inspection_id,
+                        'checksheet_item_id' => $item_id,
+                        'note' => isset($item_data['note']) ? $item_data['note'] : '',
+                        'status' => $item_data['status']
+                    ];
+
+                    // Handle photo upload if exists
+                    if (!empty($_FILES['photo_' . $item_id]['name'])) {
+                        $photo_url = $this->_upload_photo($item_id);
+                        if ($photo_url) {
+                            $detail_data['photo_url'] = $photo_url;
+                        }
+                    }
+
+                    $this->Inspection_model->insert_detail($detail_data);
                 }
-
-                $this->Inspection_model->insert_detail($detail_data);
             }
-        }
 
-        // Update equipment last check date
-        $this->Equipment_model->update_last_check($equipment_id);
+            // Update equipment last check date
+            $this->Equipment_model->update_last_check($equipment_id);
 
-        $this->db->trans_complete();
+            $this->db->trans_complete();
 
-        if ($this->db->trans_status() === FALSE) {
-            $this->session->set_flashdata('error', 'Failed to submit inspection');
-        } else {
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception('Database transaction failed');
+            }
+
             $this->session->set_flashdata('success', 'Inspection submitted successfully');
-        }
+            redirect('emergency_tools/index');
 
-        redirect('emergency_tools/location');
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            $this->session->set_flashdata('error', 'Failed to submit inspection: ' . $e->getMessage());
+            redirect('emergency_tools/index');
+        }
     }
 
     private function _upload_photo($item_id)

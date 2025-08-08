@@ -257,7 +257,7 @@
 
         <div class="map-controls">
             <button id="toggleMapping" class="btn map-btn active">
-                <i class="fas fa-layer-group me-1"></i>Show Mapping
+                <i class="fas fa-layer-group me-1"></i>Hide Mapping
             </button>
             <button id="fitMapping" class="btn map-btn">
                 <i class="fas fa-expand-arrows-alt me-1"></i>Fit to Area
@@ -269,7 +269,7 @@
 
         <p class="text-muted">
             <i class="fas fa-info-circle me-1"></i>
-            Interactive map with area mapping overlay - Click markers or location cards to select
+            Area mapping view - Click markers or location cards to select (Zoom limited for optimal viewing)
         </p>
     </div>
 
@@ -344,19 +344,20 @@
         });
 
         function initializeMap() {
-            // Initialize the map centered on mapping area
-            map = L.map('map').setView([-6.205, 106.845], 14);
+            // Initialize the map centered on mapping area with restricted zoom
+            map = L.map('map', {
+                minZoom: 13,
+                maxZoom: 17,
+                zoomControl: true
+            }).setView([-6.205, 106.845], 14);
 
-            // Add OpenStreetMap tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            // Don't add any tile layer - only show the custom mapping image
 
             // Add custom mapping area image overlay
             const mappingImageUrl = '<?= base_url("assets/emergency_tools/img/Mapping-area.png") ?>';
 
             mappingOverlay = L.imageOverlay(mappingImageUrl, imageBounds, {
-                opacity: 0.7,
+                opacity: 1.0,
                 interactive: true
             }).addTo(map);
 
@@ -386,8 +387,15 @@
                 `);
             <?php endforeach; ?>
 
-            // Fit map to show the mapping area
+            // Fit map to show the mapping area and disable further zoom out
             map.fitBounds(imageBounds);
+
+            // Disable zoom out beyond the image bounds
+            map.on('zoomend', function () {
+                if (map.getZoom() < 13) {
+                    map.setZoom(13);
+                }
+            });
 
             // Try to get user's current location
             if (navigator.geolocation) {
@@ -395,15 +403,18 @@
                     const userLat = position.coords.latitude;
                     const userLng = position.coords.longitude;
 
-                    // Add user location marker
-                    L.marker([userLat, userLng], {
-                        icon: L.icon({
-                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41],
-                            popupAnchor: [1, -34],
-                        })
-                    }).addTo(map).bindPopup('<strong>Your Current Location</strong>');
+                    // Add user location marker only if within mapping area
+                    const mappingBounds = L.latLngBounds(imageBounds);
+                    if (mappingBounds.contains([userLat, userLng])) {
+                        L.marker([userLat, userLng], {
+                            icon: L.icon({
+                                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34],
+                            })
+                        }).addTo(map).bindPopup('<strong>Your Current Location</strong>');
+                    }
                 }, function (error) {
                     console.log('Geolocation error:', error);
                 });
@@ -411,13 +422,17 @@
         }
 
         function toggleMappingOverlay() {
+            // Since we're only showing the mapping image now, this function is not needed
+            // But we'll keep it for UI consistency
             const btn = document.getElementById('toggleMapping');
             if (mappingOverlay && map.hasLayer(mappingOverlay)) {
                 map.removeLayer(mappingOverlay);
                 btn.innerHTML = '<i class="fas fa-layer-group me-1"></i>Show Mapping';
                 btn.classList.remove('active');
             } else {
-                mappingOverlay.addTo(map);
+                if (mappingOverlay) {
+                    mappingOverlay.addTo(map);
+                }
                 btn.innerHTML = '<i class="fas fa-layer-group me-1"></i>Hide Mapping';
                 btn.classList.add('active');
             }
@@ -425,6 +440,10 @@
 
         function fitToMappingArea() {
             map.fitBounds(imageBounds);
+            // Ensure minimum zoom level
+            if (map.getZoom() < 13) {
+                map.setZoom(13);
+            }
         }
 
         function resetMapView() {

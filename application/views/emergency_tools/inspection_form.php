@@ -160,7 +160,7 @@
                     <small class="text-muted">Complete equipment inspection</small>
                 </div>
                 <div class="col-auto">
-                    <a href="<?= base_url('emergency_tools') ?>" class="btn back-btn">
+                    <a href="<?= base_url('emergency_tools/index') ?>" class="btn back-btn">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
                 </div>
@@ -203,7 +203,7 @@
 
         <!-- Inspection Form -->
         <div class="content-card p-4">
-            <form action="<?= base_url('emergency_tools/inspector/submit_inspection') ?>" method="post"
+            <form action="<?= base_url('emergency_tools/submit_inspection') ?>" method="post"
                 enctype="multipart/form-data" id="inspectionForm">
                 <input type="hidden" name="equipment_id" value="<?= $equipment->id ?>">
 
@@ -236,19 +236,12 @@
                                         </div>
                                     </div>
 
-                                    <!-- Actual Condition -->
+                                    <!-- Additional Notes -->
                                     <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Actual Condition <span
-                                                    class="text-danger">*</span></label>
-                                            <textarea class="form-control"
-                                                name="checksheet_items[<?= $item->id ?>][actual_condition]" rows="3"
-                                                placeholder="Describe the actual condition..." required></textarea>
-                                        </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-12">
                                             <label class="form-label">Additional Notes</label>
                                             <textarea class="form-control" name="checksheet_items[<?= $item->id ?>][note]"
-                                                rows="3" placeholder="Any additional notes..."></textarea>
+                                                rows="3" placeholder="Any additional notes or observations..."></textarea>
                                         </div>
                                     </div>
 
