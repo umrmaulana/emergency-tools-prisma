@@ -308,7 +308,7 @@
                         data-type-id="<?= $type->id ?>">
                         <i class="fas fa-fire-extinguisher me-1"></i><?= $type->equipment_type ?>
                     </button>
-                <?php
+                    <?php
                 endif;
             endforeach;
             ?>
@@ -548,7 +548,7 @@
                 <?php
                 // Generate equipment data for JavaScript using proper coordinate system
                 $equipmentJsData = [];
-                
+
                 // Process equipment with their actual coordinates from database
                 foreach ($all_equipments as $equipment) {
                     // Find location for this equipment
@@ -559,7 +559,7 @@
                             break;
                         }
                     }
-                    
+
                     if ($location) {
                         // Use actual coordinates from database if available
                         if (isset($location->area_x) && isset($location->area_y) && $location->area_x && $location->area_y) {
@@ -570,7 +570,7 @@
                             $x = 400;
                             $y = 400;
                         }
-                        
+
                         $equipmentJsData[] = [
                             'id' => $equipment->id,
                             'code' => $equipment->equipment_code,
@@ -617,7 +617,7 @@
             equipmentData.forEach(equipment => {
                 const isOK = equipment.status === 'OK';
                 const backgroundColor = isOK ? '#28a745' : '#dc3545';
-                
+
                 // Create icon HTML based on equipment icon or default
                 let iconHtml;
                 if (equipment.iconUrl) {
@@ -675,7 +675,7 @@
                     popupAnchor: [0, -15]
                 });
 
-                const marker = L.marker([equipment.x, equipment.y], { 
+                const marker = L.marker([equipment.x, equipment.y], {
                     icon: icon,
                     equipmentTypeId: equipment.equipmentTypeId,
                     equipmentType: equipment.equipmentType
@@ -685,13 +685,13 @@
                 const popupContent = `
                     <div class="equipment-popup" style="min-width: 220px;">
                         <div class="d-flex align-items-center mb-2">
-                            ${equipment.iconUrl ? 
-                                `<img src="<?= base_url("uploads/equipment_types/") ?>${equipment.iconUrl}" 
+                            ${equipment.iconUrl ?
+                        `<img src="<?= base_url("uploads/equipment_types/") ?>${equipment.iconUrl}" 
                                      style="width: 24px; height: 24px; margin-right: 8px; object-fit: contain;" 
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
                                  <i class="fas fa-wrench text-primary me-2" style="display: none;"></i>` :
-                                `<i class="fas fa-wrench text-primary me-2"></i>`
-                            }
+                        `<i class="fas fa-wrench text-primary me-2"></i>`
+                    }
                             <strong>${equipment.code}</strong>
                         </div>
                         ${equipment.name ? `<div class="text-muted small mb-2">${equipment.name}</div>` : ''}
@@ -738,7 +738,7 @@
 
                 equipmentMarkers.push(marker);
             });
-        }        function toggleEquipmentMarkers() {
+        } function toggleEquipmentMarkers() {
             const btn = document.getElementById('toggleMapping');
             showEquipmentMarkers = !showEquipmentMarkers;
 
@@ -799,7 +799,7 @@
             equipmentMarkers.forEach(marker => {
                 // Only process equipment markers (skip location markers)
                 if (!marker.options.equipmentTypeId) return;
-                
+
                 if (filterType === 'all') {
                     // Show all equipment markers if currently visible
                     if (showEquipmentMarkers) {
@@ -809,7 +809,7 @@
                     // Filter by equipment type
                     const markerTypeId = marker.options.equipmentTypeId;
                     const markerType = marker.options.equipmentType.toLowerCase();
-                    
+
                     // Show only matching equipment type
                     if (typeId && markerTypeId == typeId) {
                         // Show markers of this specific type ID
