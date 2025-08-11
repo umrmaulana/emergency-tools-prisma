@@ -116,4 +116,48 @@ class Inspection_model extends CI_Model
         }
         return $this->db->count_all_results($this->table);
     }
+
+    public function get_recent_inspections($limit = 10)
+    {
+        $this->db->select('i.*, u.name as inspector_name, e.equipment_code, l.location_name, t.equipment_name');
+        $this->db->from($this->table . ' i');
+        $this->db->join('users u', 'u.id = i.user_id', 'left');
+        $this->db->join('tm_equipments e', 'e.id = i.equipment_id', 'left');
+        $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
+        $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
+        $this->db->order_by('i.inspection_date', 'DESC');
+        $this->db->limit($limit);
+        return $this->db->get()->result();
+    }
+
+    public function get_inspection_statistics()
+    {
+        $this->db->select('
+            COUNT(*) as total,
+            SUM(CASE WHEN approval_status = "approved" THEN 1 ELSE 0 END) as approved,
+            SUM(CASE WHEN approval_status = "rejected" THEN 1 ELSE 0 END) as rejected,
+            SUM(CASE WHEN approval_status = "pending" OR approval_status IS NULL THEN 1 ELSE 0 END) as pending
+        ');
+        $this->db->from($this->table);
+        return $this->db->get()->row_array();
+    }
+
+    public function get_all_inspections($limit = 100)
+    {
+        $this->db->select('i.*, u.name as inspector_name, e.equipment_code, l.location_name, t.equipment_name');
+        $this->db->from($this->table . ' i');
+        $this->db->join('users u', 'u.id = i.user_id', 'left');
+        $this->db->join('tm_equipments e', 'e.id = i.equipment_id', 'left');
+        $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
+        $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
+        $this->db->order_by('i.inspection_date', 'DESC');
+        $this->db->limit($limit);
+        return $this->db->get()->result();
+    }
+
+    public function count_pending_approvals()
+    {
+        $this->db->where('approval_status', 'pending');
+        return $this->db->count_all_results($this->table);
+    }
 }

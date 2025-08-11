@@ -39,6 +39,13 @@ class Emergency_tools extends CI_Controller
         $data['title'] = 'Emergency Tools - Inspector';
         $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
         $data['equipments'] = $this->Equipment_model->get_all_with_details();
+
+        // Add statistics data like in Report
+        $data['total_equipments'] = count($data['equipments']);
+        $data['recent_inspections'] = $this->Inspection_model->get_recent_inspections(10);
+        $data['inspection_stats'] = $this->Inspection_model->get_inspection_statistics();
+        $data['equipment_status'] = $this->Equipment_model->get_equipment_status_summary();
+
         $this->load->view('emergency_tools/index', $data);
     }
 

@@ -621,7 +621,7 @@
                 // Create icon HTML based on equipment icon or default
                 let iconHtml;
                 if (equipment.iconUrl) {
-                    const iconSrc = '<?= base_url("uploads/equipment_types/") ?>' + equipment.iconUrl;
+                    const iconSrc = 'https://ais.umrmaulana.my.id/assets/emergency_tools/img/equipment/' + equipment.iconUrl;
                     iconHtml = `
                         <div style="
                             background: ${backgroundColor}; 
@@ -639,7 +639,6 @@
                                 width: 18px; 
                                 height: 18px; 
                                 object-fit: contain;
-                                filter: brightness(0) invert(1);
                             " onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
                             <i class="fas fa-wrench" style="
                                 color: white; 

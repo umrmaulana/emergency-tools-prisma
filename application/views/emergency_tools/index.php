@@ -213,6 +213,63 @@
             margin: 20px;
         }
 
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-icon.bg-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .stat-icon.bg-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        }
+
+        .stat-icon.bg-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+        }
+
+        .stat-content h6 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-content small {
+            color: #6c757d;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
         .spinner-custom {
             display: none;
             margin: 20px 0;
@@ -226,6 +283,67 @@
             margin: 20px 0;
             color: #155724;
             display: none;
+        }
+
+        .recent-inspections-section {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 3px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .inspection-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .inspection-item {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .inspection-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .equipment-code {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.95rem;
+        }
+
+        .inspection-date {
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .badge-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .badge-danger {
+            background-color: #dc3545;
+            color: white;
         }
 
         @media (max-width: 768px) {
@@ -245,6 +363,26 @@
 
             .scanner-title {
                 font-size: 1.3rem;
+            }
+
+            .stat-card {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .stat-content h6 {
+                font-size: 1.2rem;
+            }
+
+            .inspection-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
             }
         }
     </style>
@@ -348,6 +486,52 @@
                 <i class="fas fa-arrow-right me-2"></i>Start Inspection
             </button>
         </div>
+
+        <!-- Recent Inspections -->
+        <?php if (isset($recent_inspections) && !empty($recent_inspections)): ?>
+            <div class="recent-inspections-section">
+                <h6 class="scanner-title">
+                    <i class="fas fa-history me-2"></i>Recent Inspections
+                </h6>
+
+                <div class="inspection-list">
+                    <?php foreach (array_slice($recent_inspections, 0, 5) as $inspection): ?>
+                        <div class="inspection-item">
+                            <div class="inspection-info">
+                                <div class="equipment-code"><?= $inspection->equipment_code ?? 'N/A' ?></div>
+                                <div class="inspection-date">
+                                    <?= date('d/m/Y H:i', strtotime($inspection->inspection_date ?? 'now')) ?>
+                                </div>
+                            </div>
+                            <div class="inspection-status">
+                                <?php
+                                $status = $inspection->approval_status ?? 'pending';
+                                $status_class = '';
+                                $status_icon = '';
+                                switch ($status) {
+                                    case 'approved':
+                                        $status_class = 'badge-success';
+                                        $status_icon = 'fas fa-check-circle';
+                                        break;
+                                    case 'rejected':
+                                        $status_class = 'badge-danger';
+                                        $status_icon = 'fas fa-times-circle';
+                                        break;
+                                    default:
+                                        $status_class = 'badge-warning';
+                                        $status_icon = 'fas fa-clock';
+                                        $status = 'pending';
+                                }
+                                ?>
+                                <span class="status-badge <?= $status_class ?>">
+                                    <i class="<?= $status_icon ?> me-1"></i><?= ucfirst($status) ?>
+                                </span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Bottom Navigation -->

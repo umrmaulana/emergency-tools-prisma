@@ -153,4 +153,26 @@ class Equipment_model extends CI_Model
     {
         return $this->db->where('id', $id)->delete($this->table);
     }
+
+    public function get_equipment_status_summary()
+    {
+        $this->db->select('
+            COUNT(*) as total,
+            SUM(CASE WHEN status = "active" THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN status = "inactive" THEN 1 ELSE 0 END) as inactive,
+            SUM(CASE WHEN status = "maintenance" THEN 1 ELSE 0 END) as maintenance
+        ');
+        $this->db->from($this->table);
+        return $this->db->get()->row_array();
+    }
+
+    public function get_equipment_with_location()
+    {
+        $this->db->select('e.*, l.location_name, l.location_code, t.equipment_name, t.equipment_type');
+        $this->db->from($this->table . ' e');
+        $this->db->join('tm_locations l', 'l.id = e.location_id', 'left');
+        $this->db->join('tm_master_equipment_types t', 't.id = e.equipment_type_id', 'left');
+        $this->db->where('e.status', 'active');
+        return $this->db->get()->result();
+    }
 }
