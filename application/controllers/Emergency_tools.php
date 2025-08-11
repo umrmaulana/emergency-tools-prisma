@@ -13,7 +13,8 @@ class Emergency_tools extends CI_Controller
             'emergency_tools/Equipment_model',
             'emergency_tools/Location_model',
             'emergency_tools/Inspection_model',
-            'emergency_tools/Checksheet_model'
+            'emergency_tools/Checksheet_model',
+            'emergency_tools/Attachment_model'
         ]);
 
         // Load libraries
@@ -140,98 +141,158 @@ class Emergency_tools extends CI_Controller
 
     public function submit_inspection()
     {
-        // Enable error display for debugging
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
-
-        // Debug: Log all received data
-        log_message('info', 'Inspection submission started');
-        log_message('info', 'POST data: ' . json_encode($this->input->post()));
-        log_message('info', 'FILES data: ' . json_encode($_FILES));
-
-        $this->form_validation->set_rules('equipment_id', 'Equipment', 'required|integer');
-        $this->form_validation->set_rules('notes', 'Notes', 'trim');
-
-        if ($this->form_validation->run() == FALSE) {
-            $this->session->set_flashdata('error', 'Please fill all required fields');
-            redirect('emergency_tools/index');
+        if ($this->input->server('REQUEST_METHOD') !== 'POST') {
+            redirect('emergency_tools');
+            return;
         }
 
-        $equipment_id = $this->input->post('equipment_id');
-        $notes = $this->input->post('notes');
-        $checksheet_items = $this->input->post('checksheet_items');
+        // Validation rules
+        $this->form_validation->set_rules([
+            ['field' => 'equipment_id', 'label' => 'Equipment ID', 'rules' => 'required|integer'],
+            ['field' => 'location_id', 'label' => 'Location ID', 'rules' => 'required|integer'],
+            ['field' => 'checklist_1', 'label' => 'Condition Check', 'rules' => 'required|in_list[GOOD,DEFECT,MISSING]'],
+            ['field' => 'checklist_2', 'label' => 'Position Check', 'rules' => 'required|in_list[GOOD,DEFECT,MISSING]'],
+            ['field' => 'checklist_3', 'label' => 'Cleanliness Check', 'rules' => 'required|in_list[GOOD,DEFECT,MISSING]'],
+            ['field' => 'overall_status', 'label' => 'Overall Status', 'rules' => 'required|in_list[GOOD,DEFECT,MISSING]'],
+            ['field' => 'remarks', 'label' => 'Remarks', 'rules' => 'max_length[500]']
+        ]);
 
-        // Start transaction
-        $this->db->trans_start();
+        if (!$this->form_validation->run()) {
+            $this->session->set_flashdata('error', validation_errors());
+            redirect('emergency_tools');
+            return;
+        }
 
         try {
-            // Create inspection record
+            // Prepare inspection data
             $inspection_data = [
+                'equipment_id' => $this->input->post('equipment_id'),
                 'user_id' => $this->session->userdata('user_id'),
-                'equipment_id' => $equipment_id,
+                'location_id' => $this->input->post('location_id'),
                 'inspection_date' => date('Y-m-d H:i:s'),
-                'notes' => $notes,
-                'approval_status' => 'pending'
+                'checklist_1' => $this->input->post('checklist_1'),
+                'checklist_2' => $this->input->post('checklist_2'),
+                'checklist_3' => $this->input->post('checklist_3'),
+                'overall_status' => $this->input->post('overall_status'),
+                'remarks' => $this->input->post('remarks') ?: null,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
             ];
 
-            $inspection_id = $this->Inspection_model->insert($inspection_data);
-            log_message('info', 'Inspection created with ID: ' . $inspection_id);
+            // Handle main photo upload
+            if (isset($_FILES['main_photo']) && $_FILES['main_photo']['error'] === 0) {
+                $upload_path = './assets/emergency_tools/img/inspections/';
 
-            // Process checksheet items if any
-            if ($checksheet_items && is_array($checksheet_items)) {
-                foreach ($checksheet_items as $item_id => $item_data) {
-                    log_message('info', 'Processing checksheet item: ' . $item_id);
+                // Create directory if it doesn't exist
+                if (!is_dir($upload_path)) {
+                    mkdir($upload_path, 0755, true);
+                }
 
-                    // Validate required fields
-                    if (!isset($item_data['status']) || empty($item_data['status'])) {
-                        throw new Exception('Status is required for all checksheet items');
-                    }
+                $config = [
+                    'upload_path' => $upload_path,
+                    'allowed_types' => 'gif|jpg|png|jpeg',
+                    'max_size' => 5120, // 5MB
+                    'encrypt_name' => true
+                ];
 
-                    $detail_data = [
-                        'inspection_id' => $inspection_id,
-                        'checksheet_item_id' => $item_id,
-                        'note' => isset($item_data['note']) ? $item_data['note'] : '',
-                        'status' => $item_data['status']
-                    ];
+                $this->load->library('upload', $config);
 
-                    // Handle photo upload if exists
-                    if (!empty($_FILES['photo_' . $item_id]['name'])) {
-                        log_message('info', 'Photo file found for item ' . $item_id . ': ' . $_FILES['photo_' . $item_id]['name']);
-
-                        $photo_url = $this->_upload_photo($item_id);
-                        if ($photo_url) {
-                            $detail_data['photo_url'] = $photo_url;
-                            log_message('info', 'Photo URL saved: ' . $photo_url);
-                        } else {
-                            log_message('error', 'Photo upload failed for item ' . $item_id);
-                        }
-                    } else {
-                        log_message('info', 'No photo file for item ' . $item_id);
-                    }
-
-                    $detail_id = $this->Inspection_model->insert_detail($detail_data);
-                    log_message('info', 'Inspection detail created with ID: ' . $detail_id);
+                if ($this->upload->do_upload('main_photo')) {
+                    $upload_data = $this->upload->data();
+                    $inspection_data['photo_path'] = 'assets/emergency_tools/img/inspections/' . $upload_data['file_name'];
+                } else {
+                    throw new Exception('Main photo upload failed: ' . $this->upload->display_errors());
                 }
             }
 
-            // Update equipment last check date
-            $this->Equipment_model->update_last_check($equipment_id);
+            // Start transaction
+            $this->db->trans_start();
 
-            $this->db->trans_complete();
+            // Insert inspection record
+            $inspection_id = $this->Inspection_model->insert($inspection_data);
 
-            if ($this->db->trans_status() === FALSE) {
-                throw new Exception('Database transaction failed');
+            if (!$inspection_id) {
+                throw new Exception('Failed to save inspection data');
             }
 
-            $this->session->set_flashdata('success', 'Inspection submitted successfully! Inspection ID: ' . $inspection_id);
-            redirect('emergency_tools/index');
+            // Handle additional photos
+            $this->_process_additional_photos($inspection_id);
+
+            // Update equipment last check date
+            $this->Equipment_model->update_last_check($inspection_data['equipment_id']);
+
+            // Commit transaction
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === false) {
+                throw new Exception('Transaction failed');
+            }
+
+            $this->session->set_flashdata('success', 'Inspection submitted successfully with all photos!');
+            redirect('emergency_tools');
 
         } catch (Exception $e) {
             $this->db->trans_rollback();
-            log_message('error', 'Inspection submission failed: ' . $e->getMessage());
-            $this->session->set_flashdata('error', 'Failed to submit inspection: ' . $e->getMessage());
-            redirect('emergency_tools/index');
+            $this->session->set_flashdata('error', 'Error saving inspection: ' . $e->getMessage());
+            redirect('emergency_tools');
+        }
+    }
+
+    private function _process_additional_photos($inspection_id)
+    {
+        // Get additional photos from JavaScript array
+        $additional_photos = $this->input->post('additional_photos');
+
+        if (empty($additional_photos) || !is_array($additional_photos)) {
+            return;
+        }
+
+        $upload_path = './assets/emergency_tools/img/attachments/';
+
+        // Create directory if it doesn't exist
+        if (!is_dir($upload_path)) {
+            mkdir($upload_path, 0755, true);
+        }
+
+        $attachment_data = [];
+
+        foreach ($additional_photos as $index => $photo_data) {
+            if (empty($photo_data) || !is_string($photo_data)) {
+                continue;
+            }
+
+            // Check if it's a base64 encoded image
+            if (preg_match('/^data:image\/(\w+);base64,/', $photo_data, $matches)) {
+                $image_type = $matches[1];
+                $image_data = substr($photo_data, strpos($photo_data, ',') + 1);
+                $image_data = base64_decode($image_data);
+
+                if ($image_data === false) {
+                    continue;
+                }
+
+                // Generate unique filename
+                $filename = 'additional_' . $inspection_id . '_' . $index . '_' . time() . '.' . $image_type;
+                $full_path = $upload_path . $filename;
+
+                if (file_put_contents($full_path, $image_data)) {
+                    $attachment_data[] = [
+                        'inspection_id' => $inspection_id,
+                        'attachment_type' => 'photo',
+                        'file_name' => $filename,
+                        'file_path' => 'assets/emergency_tools/img/attachments/' . $filename,
+                        'file_size' => strlen($image_data),
+                        'mime_type' => 'image/' . $image_type,
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ];
+                }
+            }
+        }
+
+        // Batch insert attachments
+        if (!empty($attachment_data)) {
+            $this->Attachment_model->insert_batch($attachment_data);
         }
     }
 
@@ -375,6 +436,44 @@ class Emergency_tools extends CI_Controller
             <button type="submit">Test Upload</button>
         </form>';
     }
+    public function view_inspection($inspection_id = null)
+    {
+        if (!$inspection_id) {
+            $this->session->set_flashdata('error', 'Inspection ID is required');
+            redirect('emergency_tools');
+        }
+
+        $data['user'] = $this->User_model->get_by_id($this->session->userdata('user_id'));
+        $data['inspection'] = $this->Inspection_model->get_with_details($inspection_id);
+        $data['attachments'] = $this->Attachment_model->get_inspection_attachments($inspection_id);
+
+        if (!$data['inspection']) {
+            $this->session->set_flashdata('error', 'Inspection not found');
+            redirect('emergency_tools');
+        }
+
+        $data['page_title'] = 'Inspection Details';
+        $this->load->view('emergency_tools/inspection_details', $data);
+    }
+
+    public function download_attachment($attachment_id)
+    {
+        $attachment = $this->Attachment_model->get_by_id($attachment_id);
+
+        if (!$attachment) {
+            show_404();
+        }
+
+        $file_path = FCPATH . $attachment->file_path;
+
+        if (!file_exists($file_path)) {
+            show_404();
+        }
+
+        $this->load->helper('download');
+        force_download($attachment->file_name, file_get_contents($file_path));
+    }
+
     public function debug_inspection($inspection_id = null)
     {
         if (!$inspection_id) {
@@ -390,30 +489,27 @@ class Emergency_tools extends CI_Controller
         echo "<h2>Inspection Debug: $inspection_id</h2>";
 
         $inspection = $this->Inspection_model->get_with_details($inspection_id);
-        $details = $this->Inspection_model->get_details($inspection_id);
+        $attachments = $this->Attachment_model->get_inspection_attachments($inspection_id);
 
         if ($inspection) {
             echo "<h3>Inspection Info:</h3>";
             echo "<pre>" . print_r($inspection, true) . "</pre>";
 
-            echo "<h3>Inspection Details:</h3>";
-            if ($details) {
-                foreach ($details as $detail) {
+            echo "<h3>Inspection Attachments:</h3>";
+            if ($attachments) {
+                foreach ($attachments as $attachment) {
                     echo "<div style='border: 1px solid #ccc; margin: 10px; padding: 10px;'>";
-                    echo "<h4>" . $detail->item_name . "</h4>";
-                    echo "<p>Status: " . $detail->status . "</p>";
-                    echo "<p>Note: " . $detail->note . "</p>";
-                    echo "<p>Actual Condition: " . $detail->actual_condition . "</p>";
-                    if ($detail->photo_url) {
-                        echo "<p>Photo URL: " . $detail->photo_url . "</p>";
-                        echo "<img src='" . base_url('assets/emergency_tools/img/' . $detail->photo_url) . "' style='max-width: 200px;' />";
-                    } else {
-                        echo "<p>No photo</p>";
+                    echo "<h4>" . $attachment->file_name . "</h4>";
+                    echo "<p>File Size: " . number_format($attachment->file_size / 1024, 2) . " KB</p>";
+                    echo "<p>MIME Type: " . $attachment->mime_type . "</p>";
+                    echo "<p>Created: " . $attachment->created_at . "</p>";
+                    if (strpos($attachment->mime_type, 'image/') === 0) {
+                        echo "<img src='" . base_url($attachment->file_path) . "' style='max-width: 200px;' />";
                     }
                     echo "</div>";
                 }
             } else {
-                echo "<p>No details found</p>";
+                echo "<p>No attachments found</p>";
             }
         } else {
             echo "<h3>Inspection Not Found</h3>";
