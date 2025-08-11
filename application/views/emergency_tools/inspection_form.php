@@ -398,135 +398,7 @@
             }
         }
 
-        /* Multiple Photos Section */
-        .additional-photos-section {
-            background: linear-gradient(145deg, #f8f9fa, #ffffff);
-            border-radius: var(--border-radius);
-            padding: 25px;
-            margin: 20px 0;
-            border: 2px dashed #28a745;
-            transition: all 0.3s ease;
-        }
-
-        .additional-photos-section:hover {
-            border-color: #20c997;
-            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.1);
-        }
-
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .photo-item {
-            position: relative;
-            background: white;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            box-shadow: var(--shadow-light);
-            transition: all 0.3s ease;
-        }
-
-        .photo-item:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-medium);
-        }
-
-        .photo-item img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            cursor: pointer;
-        }
-
-        .photo-item .photo-actions {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            display: flex;
-            gap: 5px;
-        }
-
-        .photo-action-btn {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            transition: all 0.2s ease;
-        }
-
-        .photo-action-btn.view {
-            background: rgba(0, 123, 255, 0.8);
-            color: white;
-        }
-
-        .photo-action-btn.delete {
-            background: rgba(220, 53, 69, 0.8);
-            color: white;
-        }
-
-        .photo-action-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .photo-info {
-            padding: 8px;
-            background: white;
-        }
-
-        .photo-info .photo-name {
-            font-size: 11px;
-            color: #6c757d;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .photo-info .photo-description {
-            font-size: 10px;
-            color: #adb5bd;
-        }
-
-        .add-photo-btn {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            border: 2px dashed transparent;
-            border-radius: var(--border-radius);
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-height: 120px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .add-photo-btn:hover {
-            background: linear-gradient(135deg, #20c997, #28a745);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        .photo-counter {
-            background: var(--info-color);
-            color: white;
-            border-radius: 20px;
-            padding: 5px 12px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-            margin-left: 10px;
-        }
-
+        /* Animation Classes */
         .fade-in {
             animation: fadeIn 0.6s ease-in;
         }
@@ -757,38 +629,6 @@
                     </div>
                 <?php endif; ?>
 
-                <!-- Additional Photos Section -->
-                <div class="content-card p-4 mt-4 fade-in">
-                    <h5 class="mb-4 text-primary">
-                        <i class="fas fa-images me-2"></i>Additional Photos
-                        <span class="photo-counter" id="photoCounter">0 Photos</span>
-                    </h5>
-
-                    <div class="additional-photos-section">
-                        <div class="text-center mb-3">
-                            <p class="text-muted mb-2">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Add additional photos to support your inspection findings
-                            </p>
-                            <small class="text-muted">
-                                Maximum 10 photos | Max size: 5MB each | Formats: JPG, PNG, GIF
-                            </small>
-                        </div>
-
-                        <div class="photo-grid" id="photoGrid">
-                            <div class="add-photo-btn" onclick="triggerPhotoUpload()" id="addPhotoBtn">
-                                <i class="fas fa-plus-circle fa-2x mb-2"></i>
-                                <span class="fw-bold">Add Photo</span>
-                                <small class="mt-1">Click to select or take photo</small>
-                            </div>
-                        </div>
-
-                        <!-- Hidden file input for additional photos -->
-                        <input type="file" id="additionalPhotoInput" accept="image/*" capture="environment" multiple
-                            style="display: none;" onchange="handleAdditionalPhotos(this)">
-                    </div>
-                </div>
-
                 <!-- General Notes Section -->
                 <div class="content-card p-4 mt-4 fade-in">
                     <h5 class="mb-4 text-primary">
@@ -849,149 +689,15 @@
         // Global variables
         let completedItems = 0;
         const totalItems = <?= !empty($checksheet_items) ? count($checksheet_items) : 0 ?>;
-        let additionalPhotos = [];
-        const maxAdditionalPhotos = 10;
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function () {
             updateProgress();
             initializeAnimations();
-            updatePhotoCounter();
 
             // Add smooth scrolling behavior
             document.documentElement.style.scrollBehavior = 'smooth';
         });
-
-        // Additional Photos Management
-        function triggerPhotoUpload() {
-            if (additionalPhotos.length >= maxAdditionalPhotos) {
-                showNotification(`Maximum ${maxAdditionalPhotos} additional photos allowed.`, 'warning');
-                return;
-            }
-            document.getElementById('additionalPhotoInput').click();
-        }
-
-        function handleAdditionalPhotos(input) {
-            const files = Array.from(input.files);
-
-            if (additionalPhotos.length + files.length > maxAdditionalPhotos) {
-                showNotification(`Can only add ${maxAdditionalPhotos - additionalPhotos.length} more photos.`, 'warning');
-                return;
-            }
-
-            files.forEach((file, index) => {
-                // Validate file
-                if (file.size > 5 * 1024 * 1024) {
-                    showNotification(`File ${file.name} is too large. Max size: 5MB`, 'error');
-                    return;
-                }
-
-                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-                if (!validTypes.includes(file.type)) {
-                    showNotification(`File ${file.name} has invalid type. Use JPG, PNG, or GIF.`, 'error');
-                    return;
-                }
-
-                // Create photo object
-                const photoId = Date.now() + index;
-                const photoObj = {
-                    id: photoId,
-                    file: file,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    description: ''
-                };
-
-                additionalPhotos.push(photoObj);
-
-                // Create preview
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    addPhotoToGrid(photoObj, e.target.result);
-                };
-                reader.readAsDataURL(file);
-            });
-
-            // Clear input
-            input.value = '';
-            updatePhotoCounter();
-        }
-
-        function addPhotoToGrid(photoObj, imageSrc) {
-            const photoGrid = document.getElementById('photoGrid');
-            const addBtn = document.getElementById('addPhotoBtn');
-
-            const photoItem = document.createElement('div');
-            photoItem.className = 'photo-item';
-            photoItem.dataset.photoId = photoObj.id;
-
-            photoItem.innerHTML = `
-                <img src="${imageSrc}" alt="Additional Photo" onclick="showImageModal('${imageSrc}', 'Additional Photo - ${photoObj.name}')">
-                <div class="photo-actions">
-                    <button type="button" class="photo-action-btn view" onclick="showImageModal('${imageSrc}', 'Additional Photo - ${photoObj.name}')" title="View">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button type="button" class="photo-action-btn delete" onclick="removeAdditionalPhoto(${photoObj.id})" title="Remove">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div class="photo-info">
-                    <div class="photo-name">${photoObj.name}</div>
-                    <input type="text" class="form-control form-control-sm photo-description-input" 
-                           placeholder="Add description..." 
-                           onchange="updatePhotoDescription(${photoObj.id}, this.value)"
-                           value="${photoObj.description}">
-                </div>
-            `;
-
-            photoGrid.insertBefore(photoItem, addBtn);
-
-            // Show/hide add button based on limit
-            if (additionalPhotos.length >= maxAdditionalPhotos) {
-                addBtn.style.display = 'none';
-            }
-
-            showNotification('Photo added successfully!', 'success');
-        }
-
-        function removeAdditionalPhoto(photoId) {
-            if (confirm('Are you sure you want to remove this photo?')) {
-                // Remove from array
-                additionalPhotos = additionalPhotos.filter(photo => photo.id !== photoId);
-
-                // Remove from DOM
-                const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`);
-                if (photoItem) {
-                    photoItem.remove();
-                }
-
-                // Show add button if hidden
-                const addBtn = document.getElementById('addPhotoBtn');
-                if (additionalPhotos.length < maxAdditionalPhotos) {
-                    addBtn.style.display = 'flex';
-                }
-
-                updatePhotoCounter();
-                showNotification('Photo removed successfully!', 'success');
-            }
-        }
-
-        function updatePhotoDescription(photoId, description) {
-            const photo = additionalPhotos.find(p => p.id === photoId);
-            if (photo) {
-                photo.description = description;
-            }
-        }
-
-        function updatePhotoCounter() {
-            const counter = document.getElementById('photoCounter');
-            counter.textContent = `${additionalPhotos.length} Photo${additionalPhotos.length !== 1 ? 's' : ''}`;
-
-            if (additionalPhotos.length > 0) {
-                counter.classList.remove('d-none');
-            }
-        }
 
         function previewImage(input, itemId) {
             const previewDiv = document.getElementById('preview_' + itemId);
@@ -1155,11 +861,6 @@
                 return false;
             }
 
-            // Add additional photos to form data
-            if (additionalPhotos.length > 0) {
-                addAdditionalPhotosToForm();
-            }
-
             // Show loading state
             const submitBtn = document.getElementById('submitBtn');
             const originalText = submitBtn.innerHTML;
@@ -1167,14 +868,7 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
 
             // Confirmation dialog
-            const totalPhotos = document.querySelectorAll('input[type="file"]').length + additionalPhotos.length;
-            let confirmMessage = 'Are you sure you want to submit this inspection report?';
-            if (totalPhotos > 0) {
-                confirmMessage += `\n\nThis includes ${totalPhotos} photo(s).`;
-            }
-            confirmMessage += '\n\nThis action cannot be undone and the report will be permanently recorded.';
-
-            if (!confirm(confirmMessage)) {
+            if (!confirm('Are you sure you want to submit this inspection report?\n\nThis action cannot be undone and the report will be permanently recorded.')) {
                 e.preventDefault();
                 // Restore button state
                 submitBtn.disabled = false;
@@ -1192,11 +886,6 @@
                 }
             });
 
-            if (additionalPhotos.length > 0) {
-                uploadCount += additionalPhotos.length;
-                console.log(`Additional photos: ${additionalPhotos.length}`);
-            }
-
             if (uploadCount > 0) {
                 showNotification(`Submitting inspection with ${uploadCount} photo(s)...`, 'info');
             }
@@ -1204,39 +893,6 @@
             // Let form submit naturally
             return true;
         });
-
-        function addAdditionalPhotosToForm() {
-            const form = document.getElementById('inspectionForm');
-
-            // Remove any existing additional photo inputs
-            const existingInputs = form.querySelectorAll('input[name^="additional_photos"]');
-            existingInputs.forEach(input => input.remove());
-
-            // Add additional photos as hidden inputs
-            additionalPhotos.forEach((photo, index) => {
-                // Create a file input for each photo
-                const fileInput = document.createElement('input');
-                fileInput.type = 'file';
-                fileInput.name = `additional_photos[${index}]`;
-                fileInput.style.display = 'none';
-
-                // Create a new FileList with the single file
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(photo.file);
-                fileInput.files = dataTransfer.files;
-
-                form.appendChild(fileInput);
-
-                // Add description as hidden input
-                if (photo.description) {
-                    const descInput = document.createElement('input');
-                    descInput.type = 'hidden';
-                    descInput.name = `additional_photo_descriptions[${index}]`;
-                    descInput.value = photo.description;
-                    form.appendChild(descInput);
-                }
-            });
-        }
 
         // Enhanced status selection handling
         document.querySelectorAll('.status-radio').forEach(radio => {
